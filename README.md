@@ -1,6 +1,6 @@
 # embedded-kafka
 
-A Clojure library designed to ... well, that part is up to you.
+A library  to embed Kafka as a component into your program and to use it for integration tests.
 
 ## Usage
 

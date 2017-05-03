@@ -1,12 +1,13 @@
 (ns embedded-kafka.core
-  (:require [com.stuartsierra.component :as component]
-            [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log])
   (:import [java.nio.file Files Paths SimpleFileVisitor FileVisitResult]
+           [org.apache.kafka.common.network ListenerName]
            [org.apache.kafka.common.protocol SecurityProtocol]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.common TopicPartition]
            [org.apache.curator.test TestingServer]
-           [kafka.utils TestUtils SystemTime$]
+           [org.apache.kafka.common.utils SystemTime]
+           [kafka.utils TestUtils]
            [kafka.server KafkaConfig KafkaConfig$]))
 
 (defn delete-dir [path-dir]
@@ -18,17 +19,6 @@
                                    (postVisitDirectory [dir _]
                                      (Files/delete dir)
                                      FileVisitResult/CONTINUE)))))
-
-(defrecord EmbeddedZooKeeper [server]
-  component/Lifecycle
-  (start [component]
-    (log/info "starting zookeeper")
-    (assoc component :server (TestingServer.)))
-  (stop [component]
-    (when-let [server (:server component)]
-      (.close (:server component))
-      (log/info "stopped zookeeper"))
-    (assoc component :server nil)))
 
 (def default-config
   (let [m  KafkaConfig$/MODULE$]
@@ -42,42 +32,29 @@
      (.MessageMaxBytesProp m) (int (* 1024 1024)) 
      (.ControlledShutdownEnableProp m) true}))
 
-(defrecord EmbeddedKafka [init-config zoo-keeper]
-  component/Lifecycle
-  (start [component]
-    (log/info "starting kafka broker")
-    (let [log-dir-path (Files/createTempDirectory "kafka-embedded"
-                                                  (into-array java.nio.file.attribute.FileAttribute []))
-          effective-config (-> default-config
-                               (merge init-config)
-                               (assoc "zookeeper.connect" (.getConnectString (:server zoo-keeper)))
 
-                               (assoc (.LogDirProp KafkaConfig$/MODULE$) (str log-dir-path)))]
-      (-> component
-          (assoc :log-dir-path log-dir-path)
-          (assoc :server (TestUtils/createServer (KafkaConfig. effective-config true) kafka.utils.SystemTime$/MODULE$)))))
-  (stop [component]
-    (when-let [server (:server component)]
-      (.shutdown server)
-      (.awaitShutdown server)
-      (log/info "stopped kafka broker"))
-    (when-let [dir (:log-dir-path component)]
-      (delete-dir dir))
-    (assoc component :server nil :log-dir-path nil)))
+(defn start-kafka [init-config zoo-keeper-connect]
+  "Start the embedded kafka broker, answering a tupple of [server log-dir-path]." 
+  (log/info "starting kafka broker")
+  (let [log-dir-path (Files/createTempDirectory "kafka-embedded"
+                                                (into-array java.nio.file.attribute.FileAttribute []))
+        effective-config (-> default-config
+                             (merge init-config)
+                             (assoc "zookeeper.connect" zoo-keeper-connect)
+                             (assoc (.LogDirProp KafkaConfig$/MODULE$) (str log-dir-path)))
+        server (TestUtils/createServer (KafkaConfig. effective-config true) (SystemTime.))]
+    [server log-dir-path]))
 
-(defn new-kafka-cluster [config]
-  (component/system-map
-   :kafka-broker (component/using (map->EmbeddedKafka config) [:zoo-keeper])
-   :zoo-keeper (map->EmbeddedZooKeeper config)))
+(defn stop-kafka [server log-dir-path]
+  "Stop the supplied Kafka broker, erasing its log directory."
+  (.shutdown server)
+  (.awaitShutdown server)
+  (log/info "stopped kafka broker")
+  (delete-dir log-dir-path))
 
-(defn kafka-broker-connect-string [kafka-broker]
-  "Answer the broker connect string for the specified cluster system map."
-  (let [server (:server kafka-broker)
-        host-name (.. server config hostName)
-        port (.boundPort server SecurityProtocol/PLAINTEXT)]
+(defn broker-connect-string [kafka-broker]
+  "Answer the broker connect string for the specified kafka broker"
+  (let [host-name (.. kafka-broker config hostName)
+        port (.boundPort kafka-broker (ListenerName/forSecurityProtocol SecurityProtocol/PLAINTEXT))]
     (str host-name ":" port)))
 
-(defn zoo-keeper-connect-string [zoo-keeper]
-  "Answer the zoo-keeper connect string for the specified cluster system map."
-  (let [server (:server zoo-keeper)]
-    (.getConnectString server)))
