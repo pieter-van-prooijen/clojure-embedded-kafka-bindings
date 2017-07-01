@@ -5,7 +5,8 @@
   (:import [org.apache.kafka.common TopicPartition]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.clients.producer KafkaProducer ProducerRecord]
-           [org.apache.kafka.clients.consumer KafkaConsumer ConsumerRecord]))
+           [org.apache.kafka.clients.consumer KafkaConsumer ConsumerRecord]
+           [kafka.admin ]))
 
 ;; Default properties for test producer / consumer
 (def default-serde (Serdes/String))
