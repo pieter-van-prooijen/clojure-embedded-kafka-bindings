@@ -6,7 +6,8 @@
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.clients.producer KafkaProducer ProducerRecord]
            [org.apache.kafka.clients.consumer KafkaConsumer ConsumerRecord]
-           [kafka.admin ]))
+           [kafka.admin]
+           [java.util UUID]))
 
 ;; Default properties for test producer / consumer
 (def default-serde (Serdes/String))
@@ -15,7 +16,7 @@
 (def default-props-producer {"key.serializer" (.. default-serde serializer getClass getName)
                              "value.serializer" (.. default-serde serializer getClass getName)
                              "acks" "all"
-                             "retries" (int 10)})
+                             "retries" (int 5)})
 
 (def default-props-consumer {"key.deserializer" (.. default-serde deserializer getClass getName) 
                              "value.deserializer" (.. default-serde deserializer getClass getName)
@@ -46,11 +47,12 @@
    (consume-key-values topic nof-items broker-connect extra-props 5000))
   ([topic nof-items broker-connect extra-props time-out]
    "Read at least nof-items key-value pairs from the specified topic, starting at beginning of the log."
-   (let [props (merge default-props default-props-consumer
-                      {"group.id" "kafka-streams.test-utils" "bootstrap.servers" broker-connect}
+   (let [group-id (str "embedded-kafka-" (UUID/randomUUID)) ; random group, so auto.offset.earliest works
+         props (merge default-props default-props-consumer
+                      {"group.id" group-id "bootstrap.servers" broker-connect}
                       extra-props)
          consumer (KafkaConsumer. props)]
-     (log/debug "Polling for key-values...")
+     (log/debug "polling for key-values on topic " topic)
      (.subscribe consumer [topic])
      (let [consumer-records  (.poll consumer time-out) ; time-out when retrieving values
            key-values (->> consumer-records

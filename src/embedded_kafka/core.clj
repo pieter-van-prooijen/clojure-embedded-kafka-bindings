@@ -26,6 +26,7 @@
      (.HostNameProp m) "127.0.0.1"
      (.PortProp m) (int 0)              ; 0 selects a random port
      (.NumPartitionsProp m) (int 1)
+     (.OffsetsTopicReplicationFactorProp m) (short 1) ; defaults to 3, cluster won't work if #brokers is less !
      (.AutoCreateTopicsEnableProp m) true
      (.DeleteTopicEnableProp m) true
      (.LogCleanerDedupeBufferSizeProp m) (* 2 1024 1024)
