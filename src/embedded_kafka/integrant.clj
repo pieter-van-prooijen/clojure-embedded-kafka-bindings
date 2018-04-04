@@ -24,9 +24,3 @@
 (defmethod ig/init-key ::kafka-connect [_ {[server _] :server}]
   (broker-connect-string server))
 
-(def default-system
-  "Default system config for splicing into existing integrant systems."
-  {::kafka-connect {:server (ig/ref ::kafka)}
-   ::kafka {:config {} :zoo-keeper-connect (ig/ref ::zoo-keeper-connect)}
-   ::zoo-keeper-connect {:server (ig/ref ::zoo-keeper)}
-   ::zoo-keeper {}})

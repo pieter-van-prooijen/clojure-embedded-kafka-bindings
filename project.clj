@@ -4,12 +4,12 @@
   :profiles {:provided {:dependencies [[org.clojure/clojure "1.8.0"]]}}
   
   :dependencies [[org.apache.curator/curator-test "2.11.1" :exclusions [log4j org.apache.zookeeper/zookeeper]]
-                 [org.apache.kafka/kafka_2.11 "0.11.0.0"
+                 [org.apache.kafka/kafka_2.11 "1.0.1"
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
-                 [org.apache.kafka/kafka_2.11 "0.11.0.0"
+                 [org.apache.kafka/kafka_2.11  "1.0.1"
                   :classifier "test"
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
-                 [org.apache.kafka/kafka-clients "0.11.0.0"
+                 [org.apache.kafka/kafka-clients  "1.0.1"
                   :classifier "test"
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
                  

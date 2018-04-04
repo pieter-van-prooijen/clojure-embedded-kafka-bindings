@@ -2,10 +2,7 @@
   (:require [clojure.tools.logging :as log])
   (:import [java.nio.file Files Paths SimpleFileVisitor FileVisitResult]
            [org.apache.kafka.common.network ListenerName]
-           [org.apache.kafka.common.protocol SecurityProtocol]
-           [org.apache.kafka.common.serialization Serdes]
-           [org.apache.kafka.common TopicPartition]
-           [org.apache.curator.test TestingServer]
+           [org.apache.kafka.common.security.auth SecurityProtocol]
            [org.apache.kafka.common.utils SystemTime]
            [kafka.utils TestUtils]
            [kafka.server KafkaConfig KafkaConfig$]))
